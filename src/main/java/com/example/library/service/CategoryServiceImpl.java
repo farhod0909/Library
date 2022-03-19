@@ -4,57 +4,48 @@ import com.example.library.dto.CategoryDto;
 import com.example.library.dto.CategoryForm;
 import com.example.library.entity.Category;
 import com.example.library.repository.CategoryRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-
 import java.util.stream.Collectors;
 
-
+@RequiredArgsConstructor
 @Service
+public class CategoryServiceImpl implements CategoryService {
 
-public class CategoryServive implements ICategoryService {
     private final CategoryRepository repository;
 
-    public CategoryServive(CategoryRepository repository) {
-        this.repository = repository;
+    @Override
+    public CategoryDto add(CategoryForm form) {
+        Category category = new Category();
+        category.setName(form.getName());
+        if (form.getParentId() != null) {
+            Category parent = get(form.getParentId());
+            category.setParentCategory(parent);
+        }
+        return CategoryDto.toDto(repository.save(category));
     }
 
     @Override
-    public CategoryDto add(CategoryForm form) {// form bilan ishlaymiz Dto berib yuboraolmaymiz to'gridan-to'gri
-        Category category = new Category();//formni ichidan tekshirib oldik to'grimi yoki xatomi
+    public CategoryDto update(Long id, CategoryForm form) {
+        Category category = get(id);
         category.setName(form.getName());
         if (form.getParentId() != null) {
-            Category parent = repository.findById(form.getParentId()).orElseThrow(() -> new RuntimeException("Parent Category not found"));
+            Category parent = get(form.getParentId());
             category.setParentCategory(parent);
         }
 
         return CategoryDto.toDto(repository.save(category));
     }
-
-    @Override
-    public CategoryDto update(CategoryForm form, Long id) {
-        Category category = repository.findById(id).orElseThrow(() -> new RuntimeException("Category not found"));
-        category.setName(form.getName());
-        if (form.getParentId() != null) {
-            Category parent = get(id);
-            category.setParentCategory(parent);
-        }
-        return CategoryDto.toDto(repository.save(category));
-
-    }
-
 
     @Override
     public CategoryDto findOne(Long id) {
         return CategoryDto.toDto(get(id));
-        ///scdcsxcdfvcds
     }
+
 
     @Override
     public ResponseEntity findAll() {
-        if (true){
-            ResponseEntity.badRequest().body("Kechirasiz sizga kirishga ruqsat yoq!");
-        }
         return ResponseEntity.ok(repository.findAllByDeletedFalse()
                 .stream()
                 .map(CategoryDto::toDto)
@@ -64,13 +55,13 @@ public class CategoryServive implements ICategoryService {
     @Override
     public void delete(Long id) {
         Category category = get(id);
-        category.setDeleted(true);//yani o'chirildi degan ma'noni beradi!
+        category.setDeleted(true);
         repository.save(category);
     }
 
-
-    private Category get(Long id) {
-        return repository.findByIdAndDeletedFalse(id).orElseThrow(() -> new RuntimeException("Category not found"));
-//Deleted true bo'lsa topa olamaydi!
+    private Category get(Long id){
+        return repository.findByIdAndDeletedFalse(id).orElseThrow(() -> new RuntimeException("Category not found!"));
     }
+
+
 }
